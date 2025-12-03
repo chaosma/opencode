@@ -460,6 +460,10 @@ export namespace Config {
       .enum(["auto", "stacked"])
       .optional()
       .describe("Control diff rendering style: 'auto' adapts to terminal width, 'stacked' always shows single column"),
+    layout: z
+      .string()
+      .optional()
+      .describe("Layout mode (built-in: default, dense; or custom layouts from ~/.config/opencode/layout/)"),
   })
 
   export const Layout = z.enum(["auto", "stretch"]).meta({

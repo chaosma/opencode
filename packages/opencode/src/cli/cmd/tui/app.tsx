@@ -13,12 +13,14 @@ import { LocalProvider, useLocal } from "@tui/context/local"
 import { DialogModel } from "@tui/component/dialog-model"
 import { DialogStatus } from "@tui/component/dialog-status"
 import { DialogThemeList } from "@tui/component/dialog-theme-list"
+import { DialogLayoutList } from "@tui/component/dialog-layout-list"
 import { DialogHelp } from "./ui/dialog-help"
 import { CommandProvider, useCommandDialog } from "@tui/component/dialog-command"
 import { DialogAgent } from "@tui/component/dialog-agent"
 import { DialogSessionList } from "@tui/component/dialog-session-list"
 import { KeybindProvider } from "@tui/context/keybind"
 import { ThemeProvider, useTheme } from "@tui/context/theme"
+import { LayoutProvider } from "@tui/context/layout"
 import { Home } from "@tui/routes/home"
 import { Session } from "@tui/routes/session"
 import { PromptHistoryProvider } from "./component/prompt/history"
@@ -113,17 +115,19 @@ export function tui(input: { url: string; args: Args; onExit?: () => Promise<voi
                       <SDKProvider url={input.url}>
                         <SyncProvider>
                           <ThemeProvider mode={mode}>
-                            <LocalProvider>
-                              <KeybindProvider>
-                                <DialogProvider>
-                                  <CommandProvider>
-                                    <PromptHistoryProvider>
-                                      <App />
-                                    </PromptHistoryProvider>
-                                  </CommandProvider>
-                                </DialogProvider>
-                              </KeybindProvider>
-                            </LocalProvider>
+                            <LayoutProvider>
+                              <LocalProvider>
+                                <KeybindProvider>
+                                  <DialogProvider>
+                                    <CommandProvider>
+                                      <PromptHistoryProvider>
+                                        <App />
+                                      </PromptHistoryProvider>
+                                    </CommandProvider>
+                                  </DialogProvider>
+                                </KeybindProvider>
+                              </LocalProvider>
+                            </LayoutProvider>
                           </ThemeProvider>
                         </SyncProvider>
                       </SDKProvider>
@@ -289,6 +293,14 @@ function App() {
       value: "theme.switch",
       onSelect: () => {
         dialog.replace(() => <DialogThemeList />)
+      },
+      category: "System",
+    },
+    {
+      title: "Switch layout",
+      value: "layout.switch",
+      onSelect: () => {
+        dialog.replace(() => <DialogLayoutList />)
       },
       category: "System",
     },

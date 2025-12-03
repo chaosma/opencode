@@ -17,6 +17,7 @@ import { useRoute, useRouteData } from "@tui/context/route"
 import { useSync } from "@tui/context/sync"
 import { SplitBorder } from "@tui/component/border"
 import { useTheme } from "@tui/context/theme"
+import { useLayout, type LayoutConfig } from "@tui/context/layout"
 import {
   BoxRenderable,
   ScrollBoxRenderable,
@@ -78,6 +79,7 @@ class CustomSpeedScroll implements ScrollAcceleration {
 
 const context = createContext<{
   width: number
+  layout: () => LayoutConfig
   conceal: () => boolean
   showThinking: () => boolean
   showTimestamps: () => boolean
@@ -115,9 +117,12 @@ export function Session() {
   const [showThinking, setShowThinking] = createSignal(kv.get("thinking_visibility", true))
   const [showTimestamps, setShowTimestamps] = createSignal(kv.get("timestamps", "hide") === "show")
   const [diffWrapMode, setDiffWrapMode] = createSignal<"word" | "none">("word")
+  const layoutCtx = useLayout()
+  const layout = createMemo(() => layoutCtx.current)
 
   const wide = createMemo(() => dimensions().width > 120)
   const sidebarVisible = createMemo(() => {
+    if (layout().forceSidebarHidden) return false
     if (session()?.parentID) return false
     if (sidebar() === "show") return true
     if (sidebar() === "auto" && wide()) return true
@@ -751,6 +756,7 @@ export function Session() {
         get width() {
           return contentWidth()
         },
+        layout,
         conceal,
         showThinking,
         showTimestamps,
@@ -759,9 +765,16 @@ export function Session() {
       }}
     >
       <box flexDirection="row">
-        <box flexGrow={1} paddingBottom={1} paddingTop={1} paddingLeft={2} paddingRight={2} gap={1}>
+        <box
+          flexGrow={1}
+          paddingBottom={layout().containerPaddingBottom}
+          paddingTop={layout().containerPaddingTop}
+          paddingLeft={layout().containerPaddingLeft}
+          paddingRight={layout().containerPaddingRight}
+          gap={layout().containerGap}
+        >
           <Show when={session()}>
-            <Show when={!sidebarVisible()}>
+            <Show when={!sidebarVisible() && layout().showHeader}>
               <Header />
             </Show>
             <scrollbox
@@ -885,7 +898,7 @@ export function Session() {
                 sessionID={route.sessionID}
               />
             </box>
-            <Show when={!sidebarVisible()}>
+            <Show when={!sidebarVisible() && layout().showFooter}>
               <Footer />
             </Show>
           </Show>
@@ -935,7 +948,7 @@ function UserMessage(props: {
           border={["left"]}
           borderColor={color()}
           customBorderChars={SplitBorder.customBorderChars}
-          marginTop={props.index === 0 ? 0 : 1}
+          marginTop={props.index === 0 ? 0 : ctx.layout().messageSeparation}
         >
           <box
             onMouseOver={() => {
@@ -945,10 +958,10 @@ function UserMessage(props: {
               setHover(false)
             }}
             onMouseUp={props.onMouseUp}
-            paddingTop={1}
-            paddingBottom={1}
-            paddingLeft={2}
-            backgroundColor={hover() ? theme.backgroundElement : theme.backgroundPanel}
+            paddingTop={ctx.layout().messagePaddingTop}
+            paddingBottom={ctx.layout().messagePaddingBottom}
+            paddingLeft={ctx.layout().messagePaddingLeft}
+            backgroundColor={theme.backgroundElement}
             flexShrink={0}
           >
             <text fg={theme.text}>{text()?.text}</text>
@@ -1038,23 +1051,30 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
         }}
       </For>
       <Show when={props.message.error}>
-        <box
-          border={["left"]}
-          paddingTop={1}
-          paddingBottom={1}
-          paddingLeft={2}
-          marginTop={1}
-          backgroundColor={theme.backgroundPanel}
-          customBorderChars={SplitBorder.customBorderChars}
-          borderColor={theme.error}
-        >
-          <text fg={theme.textMuted}>{props.message.error?.data.message}</text>
-        </box>
+        {(function () {
+          const ctx = use()
+          return (
+            <box
+              border={["left"]}
+              paddingTop={ctx.layout().messagePaddingTop}
+              paddingBottom={ctx.layout().messagePaddingBottom}
+              paddingLeft={ctx.layout().messagePaddingLeft}
+              marginTop={ctx.layout().messageSeparation}
+              backgroundColor={theme.backgroundPanel}
+              customBorderChars={SplitBorder.customBorderChars}
+              borderColor={theme.error}
+            >
+              <text fg={theme.textMuted}>{props.message.error?.data.message}</text>
+            </box>
+          )
+        })()}
       </Show>
       <Switch>
         <Match when={props.last || final()}>
-          <box paddingLeft={3}>
-            <text marginTop={1}>
+          {(function () {
+            const ctx = use()
+            return <box paddingLeft={ctx.layout().textIndent}>
+            <text marginTop={ctx.layout().agentInfoMarginTop}>
               <span style={{ fg: local.agent.color(props.message.mode) }}>▣ </span>{" "}
               <span style={{ fg: theme.text }}>{Locale.titlecase(props.message.mode)}</span>
               <span style={{ fg: theme.textMuted }}> · {props.message.modelID}</span>
@@ -1063,6 +1083,7 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
               </Show>
             </text>
           </box>
+          })()}
         </Match>
       </Switch>
     </>
@@ -1109,7 +1130,7 @@ function TextPart(props: { last: boolean; part: TextPart; message: AssistantMess
   const { theme, syntax } = useTheme()
   return (
     <Show when={props.part.text.trim()}>
-      <box id={"text-" + props.part.id} paddingLeft={3} marginTop={1} flexShrink={0}>
+      <box id={"text-" + props.part.id} paddingLeft={ctx.layout().textIndent} marginTop={ctx.layout().toolMarginTop} flexShrink={0}>
         <code
           filetype="markdown"
           drawUnstyledText={false}
@@ -1127,6 +1148,7 @@ function TextPart(props: { last: boolean; part: TextPart; message: AssistantMess
 // Pending messages moved to individual tool pending functions
 
 function ToolPart(props: { last: boolean; part: ToolPart; message: AssistantMessage }) {
+  const ctx = use()
   const { theme } = useTheme()
   const sync = useSync()
   const [margin, setMargin] = createSignal(0)
@@ -1144,23 +1166,23 @@ function ToolPart(props: { last: boolean; part: ToolPart; message: AssistantMess
       container === "block" || permission
         ? {
             border: permissionIndex === 0 ? (["left", "right"] as const) : (["left"] as const),
-            paddingTop: 1,
-            paddingBottom: 1,
-            paddingLeft: 2,
-            marginTop: 1,
+            paddingTop: ctx.layout().messagePaddingTop,
+            paddingBottom: ctx.layout().messagePaddingBottom,
+            paddingLeft: ctx.layout().toolIndent,
+            marginTop: ctx.layout().toolMarginTop,
             gap: 1,
             backgroundColor: theme.backgroundPanel,
             customBorderChars: SplitBorder.customBorderChars,
             borderColor: permissionIndex === 0 ? theme.warning : theme.background,
           }
         : {
-            paddingLeft: 3,
+            paddingLeft: ctx.layout().textIndent,
           }
 
     return (
       <box
-        marginTop={margin()}
         {...style}
+        marginTop={margin()}
         renderBefore={function () {
           const el = this as BoxRenderable
           const parent = el.parent
@@ -1168,7 +1190,7 @@ function ToolPart(props: { last: boolean; part: ToolPart; message: AssistantMess
             return
           }
           if (el.height > 1) {
-            setMargin(1)
+            setMargin(ctx.layout().toolMarginTop)
             return
           }
           const children = parent.getChildren()
@@ -1179,7 +1201,7 @@ function ToolPart(props: { last: boolean; part: ToolPart; message: AssistantMess
             return
           }
           if (previous.height > 1 || previous.id.startsWith("text-")) {
-            setMargin(1)
+            setMargin(ctx.layout().toolMarginTop)
             return
           }
         }}
