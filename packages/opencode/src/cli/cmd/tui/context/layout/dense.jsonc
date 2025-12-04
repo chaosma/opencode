@@ -33,19 +33,19 @@
     "agentInfoMarginTop": 0,
 
     // Reduced indentation to save horizontal space
-    "textIndent": 2,  // Minimal text indent
-    "toolIndent": 1,  // Minimal tool indent
+    "textIndent": 2, // Minimal text indent
+    "toolIndent": 1, // Minimal tool indent
 
     // Hide UI chrome to maximize content area
-    "showHeader": false,        // No header
-    "showFooter": false,        // No footer
+    "showHeader": false, // No header
+    "showFooter": false, // No footer
     "forceSidebarHidden": true, // Always hide sidebar
 
     // Compact input box
-    "showInputAgentInfo": false,   // Move agent/model to status line
-    "showInputBorder": false,      // No decorative border
+    "showInputAgentInfo": false, // Move agent/model to status line
+    "showInputBorder": false, // No decorative border
     "inputAgentInfoPaddingTop": 0, // No padding (not shown anyway)
-    "inputBoxPaddingTop": 1,       // One blank line above cursor
-    "inputBoxPaddingBottom": 1     // One blank line below cursor
-  }
+    "inputBoxPaddingTop": 1, // One blank line above cursor
+    "inputBoxPaddingBottom": 1, // One blank line below cursor
+  },
 }

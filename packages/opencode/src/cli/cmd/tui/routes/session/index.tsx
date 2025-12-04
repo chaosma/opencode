@@ -1073,16 +1073,18 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
         <Match when={props.last || final()}>
           {(function () {
             const ctx = use()
-            return <box paddingLeft={ctx.layout().textIndent}>
-            <text marginTop={ctx.layout().agentInfoMarginTop}>
-              <span style={{ fg: local.agent.color(props.message.mode) }}>▣ </span>{" "}
-              <span style={{ fg: theme.text }}>{Locale.titlecase(props.message.mode)}</span>
-              <span style={{ fg: theme.textMuted }}> · {props.message.modelID}</span>
-              <Show when={duration()}>
-                <span style={{ fg: theme.textMuted }}> · {Locale.duration(duration())}</span>
-              </Show>
-            </text>
-          </box>
+            return (
+              <box paddingLeft={ctx.layout().textIndent}>
+                <text marginTop={ctx.layout().agentInfoMarginTop}>
+                  <span style={{ fg: local.agent.color(props.message.mode) }}>▣ </span>{" "}
+                  <span style={{ fg: theme.text }}>{Locale.titlecase(props.message.mode)}</span>
+                  <span style={{ fg: theme.textMuted }}> · {props.message.modelID}</span>
+                  <Show when={duration()}>
+                    <span style={{ fg: theme.textMuted }}> · {Locale.duration(duration())}</span>
+                  </Show>
+                </text>
+              </box>
+            )
           })()}
         </Match>
       </Switch>

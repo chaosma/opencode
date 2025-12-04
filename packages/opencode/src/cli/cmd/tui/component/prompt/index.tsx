@@ -814,32 +814,32 @@ export function Prompt(props: PromptProps) {
         </box>
         <Show when={layout.current.showInputBorder}>
           <box
-          height={1}
-          border={["left"]}
-          borderColor={highlight()}
-          customBorderChars={{
-            ...EmptyBorder,
-            // when the background is transparent, don't draw the vertical line
-            vertical: theme.background.a != 0 ? "╹" : " ",
-          }}
-        >
-          <box
             height={1}
-            border={["bottom"]}
-            borderColor={theme.backgroundElement}
-            customBorderChars={
-              theme.background.a != 0
-                ? {
-                    ...EmptyBorder,
-                    horizontal: "▀",
-                  }
-                : {
-                    ...EmptyBorder,
-                    horizontal: " ",
-                  }
-            }
-          />
-        </box>
+            border={["left"]}
+            borderColor={highlight()}
+            customBorderChars={{
+              ...EmptyBorder,
+              // when the background is transparent, don't draw the vertical line
+              vertical: theme.background.a != 0 ? "╹" : " ",
+            }}
+          >
+            <box
+              height={1}
+              border={["bottom"]}
+              borderColor={theme.backgroundElement}
+              customBorderChars={
+                theme.background.a != 0
+                  ? {
+                      ...EmptyBorder,
+                      horizontal: "▀",
+                    }
+                  : {
+                      ...EmptyBorder,
+                      horizontal: " ",
+                    }
+              }
+            />
+          </box>
         </Show>
         <box flexDirection="row" justifyContent="space-between">
           <Show

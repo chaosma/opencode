@@ -33,19 +33,19 @@
     "agentInfoMarginTop": 1,
 
     // Horizontal indentation for message text and tool output
-    "textIndent": 3,  // Main message text indent
-    "toolIndent": 2,  // Tool call/output indent
+    "textIndent": 3, // Main message text indent
+    "toolIndent": 2, // Tool call/output indent
 
     // UI visibility toggles
-    "showHeader": true,         // Show session header
-    "showFooter": true,         // Show status footer
+    "showHeader": true, // Show session header
+    "showFooter": true, // Show status footer
     "forceSidebarHidden": false, // Force sidebar off (useful for narrow terminals)
 
     // Input box styling
-    "showInputAgentInfo": true,    // Show agent/model info below input box
-    "showInputBorder": true,       // Show decorative border below input
+    "showInputAgentInfo": true, // Show agent/model info below input box
+    "showInputBorder": true, // Show decorative border below input
     "inputAgentInfoPaddingTop": 1, // Padding above agent info line
-    "inputBoxPaddingTop": 1,       // Blank lines above cursor in input box
-    "inputBoxPaddingBottom": 0     // Blank lines below cursor in input box
-  }
+    "inputBoxPaddingTop": 1, // Blank lines above cursor in input box
+    "inputBoxPaddingBottom": 0, // Blank lines below cursor in input box
+  },
 }
