@@ -70,8 +70,10 @@ Create `~/.config/opencode/layout/minimal.jsonc`:
     "messageSeparation": 0,
 
     // No padding in message containers
-    "messagePaddingTop": 0,
-    "messagePaddingBottom": 0,
+    "userMessagePaddingTop": 0,
+    "userMessagePaddingBottom": 0,
+    "assistantMessagePaddingTop": 0,
+    "assistantMessagePaddingBottom": 0,
     "messagePaddingLeft": 1,
 
     // Minimal container padding
@@ -118,8 +120,10 @@ Create `~/.config/opencode/layout/comfortable.jsonc`:
     "messageSeparation": 2,
 
     // Generous padding
-    "messagePaddingTop": 2,
-    "messagePaddingBottom": 2,
+    "userMessagePaddingTop": 2,
+    "userMessagePaddingBottom": 2,
+    "assistantMessagePaddingTop": 2,
+    "assistantMessagePaddingBottom": 2,
     "messagePaddingLeft": 3,
 
     // Roomy containers
@@ -160,14 +164,20 @@ Create `~/.config/opencode/layout/comfortable.jsonc`:
 - Blank lines between consecutive messages (your questions and assistant replies)
 - `0` = no spacing, `1` = one blank line, etc.
 
-**`messagePaddingTop`** (number, default: 1)
-- Blank lines above content inside message boxes
+**`userMessagePaddingTop`** (number, default: 1)
+- Blank lines above content inside user message boxes
 
-**`messagePaddingBottom`** (number, default: 1)
-- Blank lines below content inside message boxes
+**`userMessagePaddingBottom`** (number, default: 0)
+- Blank lines below content inside user message boxes
+
+**`assistantMessagePaddingTop`** (number, default: 2)
+- Blank lines above content inside assistant message boxes
+
+**`assistantMessagePaddingBottom`** (number, default: 1)
+- Blank lines below content inside assistant message boxes
 
 **`messagePaddingLeft`** (number, default: 2)
-- Spaces of indentation inside message boxes
+- Spaces of indentation inside message boxes (both user and assistant)
 
 ### Container Spacing
 
@@ -276,8 +286,10 @@ The OpenCode TUI consists of several key elements you can customize:
   "name": "compact",
   "config": {
     "messageSeparation": 0,
-    "messagePaddingTop": 0,
-    "messagePaddingBottom": 0,
+    "userMessagePaddingTop": 0,
+    "userMessagePaddingBottom": 0,
+    "assistantMessagePaddingTop": 0,
+    "assistantMessagePaddingBottom": 0,
     "toolMarginTop": 0,
     "agentInfoMarginTop": 0,
     "showHeader": false,
@@ -312,8 +324,10 @@ The OpenCode TUI consists of several key elements you can customize:
   "name": "presentation",
   "config": {
     "messageSeparation": 3,
-    "messagePaddingTop": 2,
-    "messagePaddingBottom": 2,
+    "userMessagePaddingTop": 2,
+    "userMessagePaddingBottom": 2,
+    "assistantMessagePaddingTop": 2,
+    "assistantMessagePaddingBottom": 2,
     "containerPaddingLeft": 10,
     "containerPaddingRight": 10,
     "textIndent": 5,
