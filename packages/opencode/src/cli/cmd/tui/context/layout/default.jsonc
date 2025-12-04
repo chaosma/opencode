@@ -6,9 +6,15 @@
     // Vertical spacing between consecutive messages
     "messageSeparation": 1,
 
-    // Padding inside individual message containers
-    "messagePaddingTop": 1,
-    "messagePaddingBottom": 1,
+    // Padding inside user message containers
+    "userMessagePaddingTop": 1,
+    "userMessagePaddingBottom": 0,
+
+    // Padding inside assistant message containers (tool outputs, text, etc.)
+    "assistantMessagePaddingTop": 2,
+    "assistantMessagePaddingBottom": 1,
+
+    // Left padding for message text (shared by user and assistant)
     "messagePaddingLeft": 2,
 
     // Padding around the entire session container

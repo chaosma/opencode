@@ -958,8 +958,8 @@ function UserMessage(props: {
               setHover(false)
             }}
             onMouseUp={props.onMouseUp}
-            paddingTop={ctx.layout().messagePaddingTop}
-            paddingBottom={ctx.layout().messagePaddingBottom}
+            paddingTop={ctx.layout().userMessagePaddingTop}
+            paddingBottom={ctx.layout().userMessagePaddingBottom}
             paddingLeft={ctx.layout().messagePaddingLeft}
             backgroundColor={theme.backgroundElement}
             flexShrink={0}
@@ -1056,8 +1056,8 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
           return (
             <box
               border={["left"]}
-              paddingTop={ctx.layout().messagePaddingTop}
-              paddingBottom={ctx.layout().messagePaddingBottom}
+              paddingTop={ctx.layout().assistantMessagePaddingTop}
+              paddingBottom={ctx.layout().assistantMessagePaddingBottom}
               paddingLeft={ctx.layout().messagePaddingLeft}
               marginTop={ctx.layout().messageSeparation}
               backgroundColor={theme.backgroundPanel}
@@ -1130,7 +1130,14 @@ function TextPart(props: { last: boolean; part: TextPart; message: AssistantMess
   const { theme, syntax } = useTheme()
   return (
     <Show when={props.part.text.trim()}>
-      <box id={"text-" + props.part.id} paddingLeft={ctx.layout().textIndent} marginTop={ctx.layout().toolMarginTop} flexShrink={0}>
+      <box
+        id={"text-" + props.part.id}
+        paddingLeft={ctx.layout().textIndent}
+        paddingTop={ctx.layout().assistantMessagePaddingTop}
+        paddingBottom={ctx.layout().assistantMessagePaddingBottom}
+        marginTop={ctx.layout().toolMarginTop}
+        flexShrink={0}
+      >
         <code
           filetype="markdown"
           drawUnstyledText={false}
@@ -1166,8 +1173,8 @@ function ToolPart(props: { last: boolean; part: ToolPart; message: AssistantMess
       container === "block" || permission
         ? {
             border: permissionIndex === 0 ? (["left", "right"] as const) : (["left"] as const),
-            paddingTop: ctx.layout().messagePaddingTop,
-            paddingBottom: ctx.layout().messagePaddingBottom,
+            paddingTop: ctx.layout().assistantMessagePaddingTop,
+            paddingBottom: ctx.layout().assistantMessagePaddingBottom,
             paddingLeft: ctx.layout().toolIndent,
             marginTop: ctx.layout().toolMarginTop,
             gap: 1,

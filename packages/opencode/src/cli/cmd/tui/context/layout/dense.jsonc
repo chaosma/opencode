@@ -6,9 +6,15 @@
     // Spacing between messages
     "messageSeparation": 1,
 
-    // Minimal padding inside message containers
-    "messagePaddingTop": 0,
-    "messagePaddingBottom": 1,
+    // Minimal padding inside user message containers
+    "userMessagePaddingTop": 0,
+    "userMessagePaddingBottom": 0,
+
+    // Minimal padding inside assistant message containers
+    "assistantMessagePaddingTop": 1,
+    "assistantMessagePaddingBottom": 0,
+
+    // Left padding for message text
     "messagePaddingLeft": 1,
 
     // Minimal container padding

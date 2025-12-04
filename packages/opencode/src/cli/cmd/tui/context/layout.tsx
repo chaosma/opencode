@@ -12,8 +12,10 @@ import denseLayoutText from "./layout/dense.jsonc" with { type: "text" }
 
 export type LayoutConfig = {
   messageSeparation: number
-  messagePaddingTop: number
-  messagePaddingBottom: number
+  userMessagePaddingTop: number
+  userMessagePaddingBottom: number
+  assistantMessagePaddingTop: number
+  assistantMessagePaddingBottom: number
   containerPaddingTop: number
   containerPaddingBottom: number
   containerGap: number
