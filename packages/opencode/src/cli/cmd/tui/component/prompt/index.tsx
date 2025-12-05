@@ -23,6 +23,9 @@ import { TuiEvent } from "../../event"
 import { iife } from "@/util/iife"
 import { Locale } from "@/util/locale"
 import { createColors, createFrames } from "../../ui/spinner.ts"
+import { useDialog } from "@tui/ui/dialog"
+import { DialogProvider as DialogProviderConnect } from "../dialog-provider"
+import { useToast } from "../../ui/toast"
 
 export type PromptProps = {
   sessionID?: string
@@ -35,6 +38,7 @@ export type PromptProps = {
 
 export type PromptRef = {
   focused: boolean
+  current: PromptInfo
   set(prompt: PromptInfo): void
   reset(): void
   blur(): void
@@ -51,12 +55,25 @@ export function Prompt(props: PromptProps) {
   const sdk = useSDK()
   const route = useRoute()
   const sync = useSync()
+  const dialog = useDialog()
+  const toast = useToast()
   const status = createMemo(() => sync.data.session_status[props.sessionID ?? ""] ?? { type: "idle" })
   const history = usePromptHistory()
   const command = useCommandDialog()
   const renderer = useRenderer()
   const { theme, syntax } = useTheme()
   const layout = useLayout()
+
+  function promptModelWarning() {
+    toast.show({
+      variant: "warning",
+      message: "Connect a provider to send prompts",
+      duration: 3000,
+    })
+    if (sync.data.provider.length === 0) {
+      dialog.replace(() => <DialogProviderConnect />)
+    }
+  }
 
   const textareaKeybindings = createMemo(() => {
     const newlineBindings = keybind.all.input_newline || []
@@ -255,7 +272,7 @@ export function Prompt(props: PromptProps) {
 
   createEffect(() => {
     if (props.disabled) input.cursorColor = theme.backgroundElement
-    if (!props.disabled) input.cursorColor = theme.primary
+    if (!props.disabled) input.cursorColor = theme.text
   })
 
   const [store, setStore] = createStore<{
@@ -363,6 +380,9 @@ export function Prompt(props: PromptProps) {
     get focused() {
       return input.focused
     },
+    get current() {
+      return store.prompt
+    },
     focus() {
       input.focus()
     },
@@ -390,6 +410,11 @@ export function Prompt(props: PromptProps) {
     if (props.disabled) return
     if (autocomplete.visible) return
     if (!store.prompt.input) return
+    const selectedModel = local.model.current()
+    if (!selectedModel) {
+      promptModelWarning()
+      return
+    }
     const sessionID = props.sessionID
       ? props.sessionID
       : await (async () => {
@@ -426,8 +451,8 @@ export function Prompt(props: PromptProps) {
         body: {
           agent: local.agent.current().name,
           model: {
-            providerID: local.model.current().providerID,
-            modelID: local.model.current().modelID,
+            providerID: selectedModel.providerID,
+            modelID: selectedModel.modelID,
           },
           command: inputText,
         },
@@ -450,7 +475,7 @@ export function Prompt(props: PromptProps) {
           command: command.slice(1),
           arguments: args.join(" "),
           agent: local.agent.current().name,
-          model: `${local.model.current().providerID}/${local.model.current().modelID}`,
+          model: `${selectedModel.providerID}/${selectedModel.modelID}`,
           messageID,
         },
       })
@@ -460,10 +485,10 @@ export function Prompt(props: PromptProps) {
           id: sessionID,
         },
         body: {
-          ...local.model.current(),
+          ...selectedModel,
           messageID,
           agent: local.agent.current().name,
-          model: local.model.current(),
+          model: selectedModel,
           parts: [
             {
               id: Identifier.ascending("part"),
@@ -787,12 +812,12 @@ export function Prompt(props: PromptProps) {
               ref={(r: TextareaRenderable) => {
                 input = r
                 setTimeout(() => {
-                  input.cursorColor = highlight()
+                  input.cursorColor = theme.text
                 }, 0)
               }}
               onMouseDown={(r: MouseEvent) => r.target?.focus()}
               focusedBackgroundColor={theme.backgroundElement}
-              cursorColor={highlight()}
+              cursorColor={theme.text}
               syntaxStyle={syntax()}
             />
             <Show when={layout.current.showInputAgentInfo}>
