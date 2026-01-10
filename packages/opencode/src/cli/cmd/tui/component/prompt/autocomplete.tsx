@@ -370,8 +370,14 @@ export function Autocomplete(props: {
       })
     }
 
-    results.sort((a, b) => a.display.localeCompare(b.display))
+    // Add /layout command for switching layouts
+    results.push({
+      display: "/layout",
+      description: "change layout",
+      onSelect: () => command.trigger("layout.switch"),
+    })
 
+    results.sort((a, b) => a.display.localeCompare(b.display))
     const max = firstBy(results, [(x) => x.display.length, "desc"])?.display.length
     if (!max) return results
     return results.map((item) => ({
