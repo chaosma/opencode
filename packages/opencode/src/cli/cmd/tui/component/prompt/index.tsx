@@ -3,6 +3,7 @@ import { createEffect, createMemo, type JSX, onMount, createSignal, onCleanup, S
 import "opentui-spinner/solid"
 import { useLocal } from "@tui/context/local"
 import { useTheme } from "@tui/context/theme"
+import { useLayout } from "@tui/context/layout"
 import { EmptyBorder } from "@tui/component/border"
 import { useSDK } from "@tui/context/sdk"
 import { useRoute } from "@tui/context/route"
@@ -72,6 +73,7 @@ export function Prompt(props: PromptProps) {
   const renderer = useRenderer()
   const { theme, syntax } = useTheme()
   const kv = useKV()
+  const layout = useLayout()
 
   function promptModelWarning() {
     toast.show({
@@ -755,8 +757,9 @@ export function Prompt(props: PromptProps) {
         >
           <box
             paddingLeft={2}
-            paddingRight={2}
-            paddingTop={1}
+            paddingRight={1}
+            paddingTop={layout.current.inputBoxPaddingTop}
+            paddingBottom={layout.current.inputBoxPaddingBottom}
             flexShrink={0}
             backgroundColor={theme.backgroundElement}
             flexGrow={1}
@@ -931,55 +934,79 @@ export function Prompt(props: PromptProps) {
               cursorColor={theme.text}
               syntaxStyle={syntax()}
             />
-            <box flexDirection="row" flexShrink={0} paddingTop={1} gap={1}>
-              <text fg={highlight()}>
-                {store.mode === "shell" ? "Shell" : Locale.titlecase(local.agent.current().name)}{" "}
-              </text>
-              <Show when={store.mode === "normal"}>
-                <box flexDirection="row" gap={1}>
-                  <text flexShrink={0} fg={keybind.leader ? theme.textMuted : theme.text}>
-                    {local.model.parsed().model}
-                  </text>
-                  <text fg={theme.textMuted}>{local.model.parsed().provider}</text>
-                  <Show when={showVariant()}>
-                    <text fg={theme.textMuted}>·</text>
-                    <text>
-                      <span style={{ fg: theme.warning, bold: true }}>{local.model.variant.current()}</span>
+            <Show when={layout.current.showInputAgentInfo}>
+              <box flexDirection="row" flexShrink={0} paddingTop={layout.current.inputAgentInfoPaddingTop} gap={1}>
+                <text fg={highlight()}>
+                  {store.mode === "shell" ? "Shell" : Locale.titlecase(local.agent.current().name)}{" "}
+                </text>
+                <Show when={store.mode === "normal"}>
+                  <box flexDirection="row" gap={1}>
+                    <text fg={theme.textMuted}>{local.model.parsed().provider}</text>
+                    <text flexShrink={0} fg={theme.text}>
+                      {local.model.parsed().model}
                     </text>
+                    <Show when={showVariant()}>
+                      <text fg={theme.textMuted}>·</text>
+                      <text>
+                        <span style={{ fg: theme.warning, bold: true }}>{local.model.variant.current()}</span>
+                      </text>
+                    </Show>
+                  </box>
+                </Show>
+              </box>
+            </Show>
+          </box>
+        </box>
+        <Show when={layout.current.showInputBorder}>
+          <box
+            height={1}
+            border={["left"]}
+            borderColor={highlight()}
+            customBorderChars={{
+              ...EmptyBorder,
+              // when the background is transparent, don't draw the vertical line
+              vertical: theme.background.a != 0 ? "╹" : " ",
+            }}
+          >
+            <box
+              height={1}
+              border={["bottom"]}
+              borderColor={theme.backgroundElement}
+              customBorderChars={
+                theme.background.a != 0
+                  ? {
+                      ...EmptyBorder,
+                      horizontal: "▀",
+                    }
+                  : {
+                      ...EmptyBorder,
+                      horizontal: " ",
+                    }
+              }
+            />
+          </box>
+        </Show>
+        <box flexDirection="row" justifyContent="space-between">
+          <Show
+            when={status().type !== "idle"}
+            fallback={
+              <Show when={!layout.current.showInputAgentInfo}>
+                <box flexDirection="row" gap={1}>
+                  <text fg={highlight()}>
+                    {store.mode === "shell" ? "Shell" : Locale.titlecase(local.agent.current().name)}
+                  </text>
+                  <Show when={store.mode === "normal"}>
+                    <box flexDirection="row" gap={1}>
+                      <text fg={theme.textMuted}>{local.model.parsed().provider}</text>
+                      <text flexShrink={0} fg={theme.text}>
+                        {local.model.parsed().model}
+                      </text>
+                    </box>
                   </Show>
                 </box>
               </Show>
-            </box>
-          </box>
-        </box>
-        <box
-          height={1}
-          border={["left"]}
-          borderColor={highlight()}
-          customBorderChars={{
-            ...EmptyBorder,
-            vertical: theme.backgroundElement.a !== 0 ? "╹" : " ",
-          }}
-        >
-          <box
-            height={1}
-            border={["bottom"]}
-            borderColor={theme.backgroundElement}
-            customBorderChars={
-              theme.backgroundElement.a !== 0
-                ? {
-                    ...EmptyBorder,
-                    horizontal: "▀",
-                  }
-                : {
-                    ...EmptyBorder,
-                    horizontal: " ",
-                  }
             }
-          />
-        </box>
-        <box flexDirection="row" justifyContent="space-between">
-          <Show when={status().type !== "idle"} fallback={<text />}>
+          >
             <box
               flexDirection="row"
               gap={1}

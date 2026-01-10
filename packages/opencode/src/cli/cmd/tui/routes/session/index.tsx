@@ -17,6 +17,7 @@ import { useRoute, useRouteData } from "@tui/context/route"
 import { useSync } from "@tui/context/sync"
 import { SplitBorder } from "@tui/component/border"
 import { useTheme } from "@tui/context/theme"
+import { useLayout, type LayoutConfig } from "@tui/context/layout"
 import {
   BoxRenderable,
   ScrollBoxRenderable,
@@ -88,7 +89,7 @@ class CustomSpeedScroll implements ScrollAcceleration {
 
 const context = createContext<{
   width: number
-  sessionID: string
+  layout: () => LayoutConfig
   conceal: () => boolean
   showThinking: () => boolean
   showTimestamps: () => boolean
@@ -146,9 +147,12 @@ export function Session() {
   const [showScrollbar, setShowScrollbar] = kv.signal("scrollbar_visible", false)
   const [diffWrapMode, setDiffWrapMode] = createSignal<"word" | "none">("word")
   const [animationsEnabled, setAnimationsEnabled] = kv.signal("animations_enabled", true)
+  const layoutCtx = useLayout()
+  const layout = createMemo(() => layoutCtx.current)
 
   const wide = createMemo(() => dimensions().width > 120)
   const sidebarVisible = createMemo(() => {
+    if (layout().forceSidebarHidden) return false
     if (session()?.parentID) return false
     if (sidebarOpen()) return true
     if (sidebar() === "auto" && wide()) return true
@@ -875,7 +879,7 @@ export function Session() {
         get width() {
           return contentWidth()
         },
-        sessionID: route.sessionID,
+        layout,
         conceal,
         showThinking,
         showTimestamps,
@@ -885,9 +889,16 @@ export function Session() {
       }}
     >
       <box flexDirection="row">
-        <box flexGrow={1} paddingBottom={1} paddingTop={1} paddingLeft={2} paddingRight={2} gap={1}>
+        <box
+          flexGrow={1}
+          paddingBottom={layout().containerPaddingBottom}
+          paddingTop={layout().containerPaddingTop}
+          paddingLeft={layout().containerPaddingLeft}
+          paddingRight={layout().containerPaddingRight}
+          gap={layout().containerGap}
+        >
           <Show when={session()}>
-            <Show when={!sidebarVisible() || !wide()}>
+            <Show when={!sidebarVisible() && layout().showHeader}>
               <Header />
             </Show>
             <scrollbox
@@ -1028,6 +1039,9 @@ export function Session() {
                 sessionID={route.sessionID}
               />
             </box>
+            <Show when={!sidebarVisible() && layout().showFooter}>
+              <Footer />
+            </Show>
           </Show>
           <Toast />
         </box>
@@ -1094,7 +1108,7 @@ function UserMessage(props: {
           border={["left"]}
           borderColor={color()}
           customBorderChars={SplitBorder.customBorderChars}
-          marginTop={props.index === 0 ? 0 : 1}
+          marginTop={props.index === 0 ? 0 : ctx.layout().messageSeparation}
         >
           <box
             onMouseOver={() => {
@@ -1104,10 +1118,10 @@ function UserMessage(props: {
               setHover(false)
             }}
             onMouseUp={props.onMouseUp}
-            paddingTop={1}
-            paddingBottom={1}
-            paddingLeft={2}
-            backgroundColor={hover() ? theme.backgroundElement : theme.backgroundPanel}
+            paddingTop={ctx.layout().userMessagePaddingTop}
+            paddingBottom={ctx.layout().userMessagePaddingBottom}
+            paddingLeft={ctx.layout().messagePaddingLeft}
+            backgroundColor={theme.backgroundElement}
             flexShrink={0}
           >
             <text fg={theme.text}>{text()?.text}</text>
@@ -1198,43 +1212,53 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; las
         }}
       </For>
       <Show when={props.message.error && props.message.error.name !== "MessageAbortedError"}>
-        <box
-          border={["left"]}
-          paddingTop={1}
-          paddingBottom={1}
-          paddingLeft={2}
-          marginTop={1}
-          backgroundColor={theme.backgroundPanel}
-          customBorderChars={SplitBorder.customBorderChars}
-          borderColor={theme.error}
-        >
-          <text fg={theme.textMuted}>{props.message.error?.data.message}</text>
-        </box>
+        {(function () {
+          const ctx = use()
+          return (
+            <box
+              border={["left"]}
+              paddingTop={ctx.layout().assistantMessagePaddingTop}
+              paddingBottom={ctx.layout().assistantMessagePaddingBottom}
+              paddingLeft={ctx.layout().messagePaddingLeft}
+              marginTop={ctx.layout().messageSeparation}
+              backgroundColor={theme.backgroundPanel}
+              customBorderChars={SplitBorder.customBorderChars}
+              borderColor={theme.error}
+            >
+              <text fg={theme.textMuted}>{props.message.error?.data.message}</text>
+            </box>
+          )
+        })()}
       </Show>
       <Switch>
         <Match when={props.last || final() || props.message.error?.name === "MessageAbortedError"}>
-          <box paddingLeft={3}>
-            <text marginTop={1}>
-              <span
-                style={{
-                  fg:
-                    props.message.error?.name === "MessageAbortedError"
-                      ? theme.textMuted
-                      : local.agent.color(props.message.agent),
-                }}
-              >
-                ▣{" "}
-              </span>{" "}
-              <span style={{ fg: theme.text }}>{Locale.titlecase(props.message.mode)}</span>
-              <span style={{ fg: theme.textMuted }}> · {props.message.modelID}</span>
-              <Show when={duration()}>
-                <span style={{ fg: theme.textMuted }}> · {Locale.duration(duration())}</span>
-              </Show>
-              <Show when={props.message.error?.name === "MessageAbortedError"}>
-                <span style={{ fg: theme.textMuted }}> · interrupted</span>
-              </Show>
-            </text>
-          </box>
+          {(function () {
+            const ctx = use()
+            return (
+              <box paddingLeft={ctx.layout().textIndent}>
+                <text marginTop={ctx.layout().agentInfoMarginTop}>
+                  <span
+                    style={{
+                      fg:
+                        props.message.error?.name === "MessageAbortedError"
+                          ? theme.textMuted
+                          : local.agent.color(props.message.agent),
+                    }}
+                  >
+                    ▣{" "}
+                  </span>{" "}
+                  <span style={{ fg: theme.text }}>{Locale.titlecase(props.message.mode)}</span>
+                  <span style={{ fg: theme.textMuted }}> · {props.message.modelID}</span>
+                  <Show when={duration()}>
+                    <span style={{ fg: theme.textMuted }}> · {Locale.duration(duration())}</span>
+                  </Show>
+                  <Show when={props.message.error?.name === "MessageAbortedError"}>
+                    <span style={{ fg: theme.textMuted }}> · interrupted</span>
+                  </Show>
+                </text>
+              </box>
+            )
+          })()}
         </Match>
       </Switch>
     </>
@@ -1285,7 +1309,14 @@ function TextPart(props: { last: boolean; part: TextPart; message: AssistantMess
   const { theme, syntax } = useTheme()
   return (
     <Show when={props.part.text.trim()}>
-      <box id={"text-" + props.part.id} paddingLeft={3} marginTop={1} flexShrink={0}>
+      <box
+        id={"text-" + props.part.id}
+        paddingLeft={ctx.layout().textIndent}
+        paddingTop={ctx.layout().assistantMessagePaddingTop}
+        paddingBottom={ctx.layout().assistantMessagePaddingBottom}
+        marginTop={ctx.layout().toolMarginTop}
+        flexShrink={0}
+      >
         <code
           filetype="markdown"
           drawUnstyledText={false}
@@ -1430,7 +1461,7 @@ function InlineTool(props: {
   const sync = useSync()
 
   const permission = createMemo(() => {
-    const callID = sync.data.permission[ctx.sessionID]?.at(0)?.tool?.callID
+    const callID = sync.data.permission[props.part.sessionID]?.at(0)?.tool?.callID
     if (!callID) return false
     return callID === props.part.callID
   })

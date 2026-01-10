@@ -435,6 +435,11 @@ export function Autocomplete(props: {
         onSelect: () => command.trigger("theme.switch"),
       },
       {
+        display: "/layout",
+        description: "change layout",
+        onSelect: () => command.trigger("layout.switch"),
+      },
+      {
         display: "/editor",
         description: "open editor",
         onSelect: () => command.trigger("prompt.editor", "prompt"),
