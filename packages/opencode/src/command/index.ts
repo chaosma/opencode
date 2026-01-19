@@ -1,11 +1,14 @@
 import { BusEvent } from "@/bus/bus-event"
 import z from "zod"
+import path from "path"
 import { Config } from "../config/config"
 import { Instance } from "../project/instance"
 import { Identifier } from "../id/id"
 import PROMPT_INITIALIZE from "./template/initialize.txt"
 import PROMPT_REVIEW from "./template/review.txt"
 import { MCP } from "../mcp"
+import { Skill } from "../skill"
+import { ConfigMarkdown } from "../config/markdown"
 
 export namespace Command {
   export const Event = {
@@ -115,6 +118,40 @@ export namespace Command {
           })
         },
         hints: prompt.arguments?.map((_, i) => `$${i + 1}`) ?? [],
+      }
+    }
+
+    // Add skills as slash commands
+    for (const skill of await Skill.all()) {
+      // Skip if a command with the same name already exists
+      if (result[skill.name]) continue
+
+      result[skill.name] = {
+        name: skill.name,
+        description: skill.description,
+        get template() {
+          return new Promise<string>(async (resolve, reject) => {
+            try {
+              const parsed = await ConfigMarkdown.parse(skill.location)
+              const dir = path.dirname(skill.location)
+              const content = [
+                `## Skill: ${skill.name}`,
+                "",
+                `**Base directory**: ${dir}`,
+                "",
+                parsed.content.trim(),
+                "",
+                "---",
+                "",
+                "User arguments: $ARGUMENTS",
+              ].join("\n")
+              resolve(content)
+            } catch (err) {
+              reject(err)
+            }
+          })
+        },
+        hints: ["$ARGUMENTS"],
       }
     }
 
