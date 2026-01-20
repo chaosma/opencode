@@ -10,6 +10,7 @@ export function DialogMessage(props: {
   messageID: string
   sessionID: string
   setPrompt?: (prompt: PromptInfo) => void
+  onJump?: (messageID: string) => void
 }) {
   const sync = useSync()
   const sdk = useSDK()
@@ -20,6 +21,15 @@ export function DialogMessage(props: {
     <DialogSelect
       title="Message Actions"
       options={[
+        {
+          title: "Jump to this message",
+          value: "message.jump",
+          disabled: !props.onJump,
+          onSelect: (dialog) => {
+            props.onJump?.(props.messageID)
+            dialog.clear()
+          },
+        },
         {
           title: "Revert",
           value: "session.revert",
