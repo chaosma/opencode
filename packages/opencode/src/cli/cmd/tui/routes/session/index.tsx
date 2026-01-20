@@ -330,6 +330,12 @@ export function Session() {
               })
               if (child) scroll.scrollBy(child.y - scroll.y - 1)
             }}
+            onJump={(messageID) => {
+              const child = scroll.getChildren().find((child) => {
+                return child.id === messageID
+              })
+              if (child) scroll.scrollBy(child.y - scroll.y - 1)
+            }}
             sessionID={route.sessionID}
             setPrompt={(promptInfo) => prompt.set(promptInfo)}
           />
@@ -996,6 +1002,12 @@ export function Session() {
                               messageID={message.id}
                               sessionID={route.sessionID}
                               setPrompt={(promptInfo) => prompt.set(promptInfo)}
+                              onJump={(messageID) => {
+                                const child = scroll.getChildren().find((child) => {
+                                  return child.id === messageID
+                                })
+                                if (child) scroll.scrollBy(child.y - scroll.y - 1)
+                              }}
                             />
                           ))
                         }}
