@@ -26,6 +26,7 @@ await Bun.write(
 console.log("Generated models-snapshot.ts")
 
 const singleFlag = process.argv.includes("--single")
+const linuxFlag = process.argv.includes("--linux")
 const baselineFlag = process.argv.includes("--baseline")
 const skipInstall = process.argv.includes("--skip-install")
 
@@ -88,14 +89,21 @@ const allTargets: {
   },
 ]
 
-const targets = singleFlag
+const targets = singleFlag || linuxFlag
   ? allTargets.filter((item) => {
-      if (item.os !== process.platform || item.arch !== process.arch) {
-        return false
+      if (linuxFlag) {
+        if (item.os !== "linux" || item.arch !== process.arch) {
+          return false
+        }
+        if (item.abi === "musl") {
+          return false
+        }
+      } else {
+        if (item.os !== process.platform || item.arch !== process.arch) {
+          return false
+        }
       }
 
-      // When building for the current platform, prefer a single native binary by default.
-      // Baseline binaries require additional Bun artifacts and can be flaky to download.
       if (item.avx2 === false) {
         return baselineFlag
       }
@@ -109,7 +117,18 @@ const targets = singleFlag
     })
   : allTargets
 
-await $`rm -rf dist`
+for (const item of targets) {
+  const name = [
+    pkg.name,
+    item.os === "win32" ? "windows" : item.os,
+    item.arch,
+    item.avx2 === false ? "baseline" : undefined,
+    item.abi === undefined ? undefined : item.abi,
+  ]
+    .filter(Boolean)
+    .join("-")
+  await $`rm -rf dist/${name}`
+}
 
 const binaries: Record<string, string> = {}
 if (!skipInstall) {
