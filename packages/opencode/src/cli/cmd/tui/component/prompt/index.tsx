@@ -1028,18 +1028,24 @@ export function Prompt(props: PromptProps) {
             />
           </box>
         </Show>
-        <box flexDirection="row" justifyContent="space-between">
+        <box
+          flexDirection={status().type === "idle" && !layout.current.showInputAgentInfo ? "column" : "row"}
+          justifyContent="space-between"
+          alignItems={status().type === "idle" && !layout.current.showInputAgentInfo ? "flex-end" : undefined}
+        >
           <Show
             when={status().type !== "idle"}
             fallback={
               <Show when={!layout.current.showInputAgentInfo}>
-                <box flexDirection="row" gap={1}>
-                  <text fg={highlight()}>
+                <box flexDirection="row" gap={1} flexShrink={0}>
+                  <text flexShrink={0} fg={highlight()}>
                     {store.mode === "shell" ? "Shell" : Locale.titlecase(local.agent.current().name)}
                   </text>
                   <Show when={store.mode === "normal"}>
-                    <box flexDirection="row" gap={1}>
-                      <text fg={theme.textMuted}>{local.model.parsed().provider}</text>
+                    <box flexDirection="row" gap={1} flexShrink={0}>
+                      <text flexShrink={0} fg={theme.textMuted}>
+                        {local.model.parsed().provider}
+                      </text>
                       <text flexShrink={0} fg={theme.text}>
                         {local.model.parsed().model}
                       </text>
@@ -1129,23 +1135,23 @@ export function Prompt(props: PromptProps) {
             </box>
           </Show>
           <Show when={status().type !== "retry"}>
-            <box gap={2} flexDirection="row">
+            <box gap={2} flexDirection="row" flexShrink={0}>
               <Switch>
                 <Match when={store.mode === "normal"}>
                   <Show when={local.model.variant.list().length > 0}>
-                    <text fg={theme.text}>
+                    <text fg={theme.text} wrapMode="none">
                       {keybind.print("variant_cycle")} <span style={{ fg: theme.textMuted }}>variants</span>
                     </text>
                   </Show>
-                  <text fg={theme.text}>
+                  <text fg={theme.text} wrapMode="none">
                     {keybind.print("agent_cycle")} <span style={{ fg: theme.textMuted }}>agents</span>
                   </text>
-                  <text fg={theme.text}>
+                  <text fg={theme.text} wrapMode="none">
                     {keybind.print("command_list")} <span style={{ fg: theme.textMuted }}>commands</span>
                   </text>
                 </Match>
                 <Match when={store.mode === "shell"}>
-                  <text fg={theme.text}>
+                  <text fg={theme.text} wrapMode="none">
                     esc <span style={{ fg: theme.textMuted }}>exit shell mode</span>
                   </text>
                 </Match>
