@@ -69,6 +69,7 @@ import { useDirectoryRecents } from "../../prompt/directory-recents"
 import { directoryRecentValue } from "../../prompt/directory-completion"
 import { useWorkingDirectoryActions } from "../../ui/working-directory-actions"
 import { truncateFilePath } from "../../ui/file-path"
+import { useLayout } from "../../context/layout"
 import { PromptMetadataRow } from "./metadata"
 
 export type PromptProps = {
@@ -206,6 +207,7 @@ export function Prompt(props: PromptProps) {
   const currentLocation = useLocation()
   const args = useArgs()
   const config = useConfig().data
+  const layout = useLayout()
   const dialog = useDialog()
   const toast = useToast()
   const status = createMemo(() => data.session.status(props.sessionID ?? ""))
@@ -1594,7 +1596,9 @@ export function Prompt(props: PromptProps) {
   const footerInput = () => ({
     sessionID: props.sessionID,
     mode: store.mode,
-    showDetails: store.interrupt === 0 || dimensions().width >= 80,
+    showDetails:
+      dimensions().width >= 80 ||
+      (store.interrupt === 0 && (layout().showInputAgentInfo || status() !== "running")),
   })
 
   const placeholderText = createMemo(() => {
@@ -1658,6 +1662,22 @@ export function Prompt(props: PromptProps) {
   })
   const maxHeight = createMemo(() => Math.max(6, Math.floor(dimensions().height / 3)))
 
+  const Metadata = () => (
+    <PromptMetadataRow
+      mode={store.mode}
+      agent={agentLabel()}
+      auto={local.permission.mode === "autoaccept"}
+      model={promptDisplay().modelLabel}
+      provider={promptDisplay().providerLabel}
+      variant={promptDisplay().variant}
+      muted={!!muted()}
+      highlight={highlight()}
+      agentAlpha={agentMetaAlpha()}
+      modelAlpha={modelMetaAlpha()}
+      variantAlpha={variantMetaAlpha()}
+    />
+  )
+
   const promptBg = createMemo(() => theme.decrease(theme.background.raised.base))
 
   return (
@@ -1675,7 +1695,8 @@ export function Prompt(props: PromptProps) {
           <box
             paddingLeft={dimensions().width < 44 ? 1 : 2}
             paddingRight={dimensions().width < 44 ? 1 : 2}
-            paddingTop={1}
+            paddingTop={layout().inputBoxPaddingTop}
+            paddingBottom={layout().inputBoxPaddingBottom}
             flexShrink={0}
             backgroundColor={promptBg()}
             flexGrow={1}
@@ -1755,7 +1776,7 @@ export function Prompt(props: PromptProps) {
               placeholderColor={theme.text.muted}
               textColor={muted() ? theme.text.muted : theme.text.base}
               focusedTextColor={muted() ? theme.text.muted : theme.text.base}
-              minHeight={1}
+              minHeight={layout().inputMinHeight}
               maxHeight={maxHeight()}
               cursorStyle={config.cursor}
               onContentChange={() => {
@@ -1837,49 +1858,52 @@ export function Prompt(props: PromptProps) {
               cursorColor={disabled() ? theme.background.raised.base : theme.text.base}
               syntaxStyle={syntax()}
             />
-            <box flexDirection="row" flexShrink={0} paddingTop={1} gap={1} justifyContent="space-between">
-              <PromptMetadataRow
-                mode={store.mode}
-                agent={agentLabel()}
-                auto={local.permission.mode === "autoaccept"}
-                model={promptDisplay().modelLabel}
-                provider={promptDisplay().providerLabel}
-                variant={promptDisplay().variant}
-                muted={!!muted()}
-                highlight={highlight()}
-                agentAlpha={agentMetaAlpha()}
-                modelAlpha={modelMetaAlpha()}
-                variantAlpha={variantMetaAlpha()}
-              />
-            </box>
+            <Show when={layout().showInputAgentInfo}>
+              <box
+                flexDirection="row"
+                flexShrink={0}
+                paddingTop={layout().inputAgentInfoPaddingTop}
+                gap={1}
+                justifyContent="space-between"
+              >
+                <Metadata />
+              </box>
+            </Show>
           </box>
         </box>
-        <box
-          height={1}
-          border={["left"]}
-          borderColor={borderHighlight()}
-          customBorderChars={{
-            ...EmptyBorder,
-            vertical: promptBg().a !== 0 ? "╹" : " ",
-          }}
-        >
+        <Show when={layout().showInputBorder}>
           <box
             height={1}
-            border={["bottom"]}
-            borderColor={promptBg()}
-            customBorderChars={
-              promptBg().a !== 0
-                ? {
-                    ...EmptyBorder,
-                    horizontal: "▀",
-                  }
-                : {
-                    ...EmptyBorder,
-                    horizontal: " ",
-                  }
-            }
-          />
-        </box>
+            border={["left"]}
+            borderColor={borderHighlight()}
+            customBorderChars={{
+              ...EmptyBorder,
+              vertical: promptBg().a !== 0 ? "╹" : " ",
+            }}
+          >
+            <box
+              height={1}
+              border={["bottom"]}
+              borderColor={promptBg()}
+              customBorderChars={
+                promptBg().a !== 0
+                  ? {
+                      ...EmptyBorder,
+                      horizontal: "▀",
+                    }
+                  : {
+                      ...EmptyBorder,
+                      horizontal: " ",
+                    }
+              }
+            />
+          </box>
+        </Show>
+        <Show when={!layout().showInputAgentInfo && status() !== "running"}>
+          <box id="prompt.compact-metadata" width="100%" flexShrink={0}>
+            <Metadata />
+          </box>
+        </Show>
         <box width="100%" flexDirection="row" justifyContent="space-between" gap={2}>
           <Slot path="prompt.footer" input={footerInput()}>
             <Slot path="prompt.footer.status" input={footerInput()}>
@@ -1895,7 +1919,7 @@ export function Prompt(props: PromptProps) {
                 <Switch>
                   <Match when={status() === "running"}>
                     <box flexDirection="row" gap={1} flexGrow={1} justifyContent="flex-start">
-                      <box marginLeft={1}>
+                      <box marginLeft={1} flexShrink={0}>
                         <Show when={config.animations ?? true} fallback={<text fg={theme.text.muted}>[⋯]</text>}>
                           <spinner color={spinnerDef().color} frames={spinnerDef().frames} interval={40} />
                         </Show>
@@ -1928,7 +1952,7 @@ export function Prompt(props: PromptProps) {
                     </box>
                   </Match>
                   <Match when={true}>
-                    <Show when={locationLabelDisplay()} fallback={<text />}>
+                    <Show when={layout().showFooter && locationLabelDisplay()} fallback={<text />}>
                       {(location) => (
                         <text
                           id="prompt.footer.location"
@@ -1950,7 +1974,11 @@ export function Prompt(props: PromptProps) {
               </box>
             </Slot>
             <Slot path="prompt.footer.file" input={footerInput()}>
-              <Show when={editorContextLabelState() !== "none" ? editorFileLabelDisplay() : undefined}>
+              <Show
+                when={
+                  layout().showFooter && editorContextLabelState() !== "none" ? editorFileLabelDisplay() : undefined
+                }
+              >
                 {(file) => (
                   <text
                     wrapMode="none"

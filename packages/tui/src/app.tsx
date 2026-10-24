@@ -110,6 +110,9 @@ import { StorageProvider, useStorage } from "./context/storage"
 import { SessionTerminalsProvider } from "./context/session-terminals"
 import { ClientMcp } from "./context/client-mcp"
 import { PanelProvider, usePanel } from "./context/panel"
+import { LayoutProvider, useLayout } from "./context/layout"
+import { DialogLayoutList } from "./component/dialog-layout-list"
+import { configDirectories } from "./util/config-directories"
 import { SessionFrame } from "./component/session-frame"
 import { createTuiClipboard } from "./clipboard"
 
@@ -168,6 +171,7 @@ const appBindingCommands = [
   "location.reload",
   "opencode.debug",
   "theme.switch",
+  "layout.switch",
   "theme.switch_mode",
   "theme.mode.lock",
   "help.show",
@@ -416,34 +420,41 @@ export const run = Effect.fn("Tui.run")(function* (input: TuiInput) {
                                                         >
                                                           <ThemeErrorToast />
                                                           <ClientMcp />
-                                                          <LocalProvider>
-                                                            <PromptStashProvider>
-                                                              <DialogProvider>
-                                                                <FrecencyProvider>
-                                                                  <PromptHistoryProvider>
-                                                                    <PromptRefProvider>
-                                                                      <EditorContextProvider>
-                                                                        <AttentionProvider>
-                                                                          <UpdateNotificationProvider
-                                                                            updater={input.updater}
-                                                                          >
-                                                                            <PanelProvider>
-                                                                              <PluginProvider
-                                                                                packages={input.packages}
-                                                                                directories={pluginDirectories}
-                                                                              >
-                                                                                <App />
-                                                                              </PluginProvider>
-                                                                            </PanelProvider>
-                                                                          </UpdateNotificationProvider>
-                                                                        </AttentionProvider>
-                                                                      </EditorContextProvider>
-                                                                    </PromptRefProvider>
-                                                                  </PromptHistoryProvider>
-                                                                </FrecencyProvider>
-                                                              </DialogProvider>
-                                                            </PromptStashProvider>
-                                                          </LocalProvider>
+                                                          <LayoutProvider
+                                                            directories={configDirectories(
+                                                              global.config,
+                                                              process.cwd(),
+                                                            )}
+                                                          >
+                                                            <LocalProvider>
+                                                              <PromptStashProvider>
+                                                                <DialogProvider>
+                                                                  <FrecencyProvider>
+                                                                    <PromptHistoryProvider>
+                                                                      <PromptRefProvider>
+                                                                        <EditorContextProvider>
+                                                                          <AttentionProvider>
+                                                                            <UpdateNotificationProvider
+                                                                              updater={input.updater}
+                                                                            >
+                                                                              <PanelProvider>
+                                                                                <PluginProvider
+                                                                                  packages={input.packages}
+                                                                                  directories={pluginDirectories}
+                                                                                >
+                                                                                  <App />
+                                                                                </PluginProvider>
+                                                                              </PanelProvider>
+                                                                            </UpdateNotificationProvider>
+                                                                          </AttentionProvider>
+                                                                        </EditorContextProvider>
+                                                                      </PromptRefProvider>
+                                                                    </PromptHistoryProvider>
+                                                                  </FrecencyProvider>
+                                                                </DialogProvider>
+                                                              </PromptStashProvider>
+                                                            </LocalProvider>
+                                                          </LayoutProvider>
                                                         </ThemeProvider>
                                                       </SessionTerminalsProvider>
                                                     </SessionTabsProvider>
@@ -487,6 +498,7 @@ export const run = Effect.fn("Tui.run")(function* (input: TuiInput) {
 })
 
 function App() {
+  const preset = useLayout()
   const app = useTuiApp()
   const startup = useTuiStartup()
   const config = useConfig()
@@ -614,7 +626,7 @@ function App() {
     route.data.type === "session" &&
     panels.current()?.sessionID === route.data.sessionID &&
     panels.presentation() === "fullscreen"
-  const tabsVisible = () => tabsAvailable() && !fullscreenPanel()
+  const tabsVisible = () => preset().showHeader && tabsAvailable() && !fullscreenPanel()
   const verticalTabsVisible = () => tabsVisible() && tabsVertical()
 
   // Measure the prospective split layout, even while full-screen hides the tabs.
@@ -1110,6 +1122,13 @@ function App() {
         run: () => {
           dialog.replace(() => <DialogDebug />)
         },
+        category: "System",
+      },
+      {
+        name: "layout.switch",
+        title: "Switch layout",
+        slash: { name: "layout" },
+        run: () => dialog.replace(() => <DialogLayoutList />),
         category: "System",
       },
       {

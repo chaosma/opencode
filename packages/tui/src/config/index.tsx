@@ -67,6 +67,9 @@ export const Cursor = Schema.Struct({
 }).annotate({ description: "Terminal cursor settings" })
 
 export const Info = Schema.Struct({
+  layout: Schema.optional(Schema.String).annotate({
+    description: "TUI layout preset: default, dense, or a custom layout filename",
+  }),
   theme: Schema.optional(
     Schema.Struct({
       name: Schema.optional(Schema.String).annotate({ description: "Theme name" }),

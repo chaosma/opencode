@@ -1,6 +1,6 @@
-import { RGBA, TextAttributes } from "@opentui/core"
+import { RGBA, TextAttributes, type BoxRenderable } from "@opentui/core"
 import { useTerminalDimensions } from "@opentui/solid"
-import { createMemo, Show } from "solid-js"
+import { createMemo, createSignal, Show } from "solid-js"
 import { useTheme } from "../../context/theme"
 import { Locale } from "../../util/locale"
 import { stringWidth } from "../../util/string-width"
@@ -20,10 +20,11 @@ export function PromptMetadataRow(props: {
 }) {
   const theme = useTheme()
   const dimensions = useTerminalDimensions()
+  const [width, setWidth] = createSignal<number>()
   const layout = createMemo(() => {
     if (props.mode === "shell") return { agent: props.agent ?? "Shell", model: "" }
     return promptMetadataLayout({
-      width: Math.max(0, dimensions().width - (dimensions().width < 44 ? 9 : 13)),
+      width: width() ?? Math.max(0, dimensions().width - (dimensions().width < 44 ? 9 : 13)),
       terminalWidth: dimensions().width,
       agent: props.agent ?? "",
       auto: props.auto,
@@ -34,7 +35,16 @@ export function PromptMetadataRow(props: {
   })
 
   return (
-    <box flexDirection="row" gap={1} flexGrow={1} flexShrink={1} minWidth={0}>
+    <box
+      flexDirection="row"
+      gap={1}
+      flexGrow={1}
+      flexShrink={1}
+      minWidth={0}
+      onSizeChange={function (this: BoxRenderable) {
+        setWidth(this.width)
+      }}
+    >
       <Show
         when={(props.mode === "shell" || props.agent) && (layout().agent || layout().model)}
         fallback={<box height={1} />}

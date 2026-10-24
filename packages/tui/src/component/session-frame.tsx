@@ -8,6 +8,7 @@ import {
 } from "@opentui/core"
 import { useRenderer, useTerminalDimensions } from "@opentui/solid"
 import { batch, createEffect, createMemo, createResource, createSignal, on, onCleanup, Show } from "solid-js"
+import { useLayout } from "../context/layout"
 import { useConfig } from "../config"
 import { useData } from "../context/data"
 import { Keymap } from "../context/keymap"
@@ -30,6 +31,7 @@ export function SessionFrame(props: { sessionID: string; verticalTabsWidth: numb
   const sessions = useSessionTerminals()
   const prompt = usePromptRef()
   const config = useConfig()
+  const preset = useLayout()
   const data = useData()
   const toast = useToast()
   const terminalError = () => toast.show({ variant: "error", message: "Unable to load terminal" })
@@ -105,6 +107,7 @@ export function SessionFrame(props: { sessionID: string; verticalTabsWidth: numb
   )
   const wide = createMemo(() => dimensions().width - props.verticalTabsWidth > 120)
   const sidebarVisible = createMemo(() => {
+    if (preset().forceSidebarHidden) return false
     if (data.session.get(props.sessionID)?.parentID) return false
     if (sidebarOpen()) return true
     return (config.data.session?.sidebar ?? "auto") === "auto" && wide()
@@ -185,6 +188,7 @@ export function SessionFrame(props: { sessionID: string; verticalTabsWidth: numb
     commands: [
       {
         id: "session.sidebar.toggle",
+        enabled: () => !preset().forceSidebarHidden,
         title: rightPane() === "sidebar" ? "Hide sidebar" : "Show sidebar",
         group: "Session",
         palette: true,

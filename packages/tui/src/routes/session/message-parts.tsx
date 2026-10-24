@@ -6,6 +6,7 @@ import type {
   SessionMessageAssistantReasoning,
   SessionMessageAssistantText,
 } from "@opencode/client"
+import { useLayout } from "../../context/layout"
 import { Spinner } from "../../component/spinner"
 import { createSyntaxStyleMemo, useTheme, useThemes } from "../../context/theme"
 import { reasoningSummary } from "../../context/thinking"
@@ -45,6 +46,7 @@ export function ReasoningPart(props: {
   part: SessionMessageAssistantReasoning
   message: SessionMessageAssistant
 }) {
+  const layout = useLayout()
   const theme = useTheme()
   const { currentSyntax: syntax } = useThemes()
   const renderer = useRenderer()
@@ -74,7 +76,7 @@ export function ReasoningPart(props: {
 
   return (
     <Show when={content()}>
-      <box paddingLeft={3} flexDirection="column" flexShrink={0}>
+      <box paddingLeft={layout().textIndent} flexDirection="column" flexShrink={0}>
         <box
           border={!inMinimal() || expanded() ? ["left"] : undefined}
           customBorderChars={SplitBorder.customBorderChars}
@@ -175,13 +177,19 @@ export function TextPart(props: {
   part: SessionMessageAssistantText
   message: SessionMessageAssistant
 }) {
+  const layout = useLayout()
   const ctx = use()
   const theme = useTheme()
   const { currentSyntax: syntax } = useThemes()
   const plugins = usePlugin()
   return (
     <Show when={props.part.text.trim()}>
-      <box paddingLeft={3} flexShrink={0}>
+      <box
+        paddingLeft={layout().textIndent}
+        paddingTop={layout().assistantMessagePaddingTop}
+        paddingBottom={layout().assistantMessagePaddingBottom}
+        flexShrink={0}
+      >
         {/* Configure custom nodes before parsing; apply content before streaming so completion keeps the final tokens. */}
         <markdown
           syntaxStyle={syntax()}
@@ -218,8 +226,14 @@ export function InlineToolRow(props: {
   onMouseOut?: () => void
   onMouseUp?: (event: MouseEvent) => void
 }) {
+  const layout = useLayout()
   return (
-    <box paddingLeft={3} onMouseOver={props.onMouseOver} onMouseOut={props.onMouseOut} onMouseUp={props.onMouseUp}>
+    <box
+      paddingLeft={layout().toolIndent}
+      onMouseOver={props.onMouseOver}
+      onMouseOut={props.onMouseOut}
+      onMouseUp={props.onMouseUp}
+    >
       <Switch>
         <Match when={props.spinner}>
           <Show when={props.status} fallback={<Spinner color={props.color} children={props.children} />}>

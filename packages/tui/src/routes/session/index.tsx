@@ -88,6 +88,7 @@ import { PermissionPrompt } from "./permission"
 import { FormPrompt } from "./form"
 import { DialogExportOptions } from "../../ui/dialog-export-options"
 import { DialogExportResult } from "../../ui/dialog-export-result"
+import { useLayout } from "../../context/layout"
 import { useConfig, useNewDesigns } from "../../config"
 import { useClipboard } from "../../context/clipboard"
 import { nextThinkingMode, type ThinkingMode } from "../../context/thinking"
@@ -156,6 +157,7 @@ export function Session(props: {
   onTerminalPicker?: (show: (() => void) | undefined) => void
   width?: number
 }) {
+  const layout = useLayout()
   const epilogue = useEpilogue()
   const clipboard = useClipboard()
   const writeExport = async (file: string, content: string) => {
@@ -256,7 +258,11 @@ export function Session(props: {
     enabled: () => props.sidebarVisible && dimensions().width - props.verticalTabsWidth <= 120 && !disabled(),
     commands: [{ bind: "escape,ctrl+c", title: "Close sidebar", group: "Session", run: props.onToggleSidebar }],
   }))
-  const contentWidth = createMemo(() => (props.width ?? dimensions().width - props.verticalTabsWidth) - 4)
+  const paddingLeft = () => Math.min(layout().containerPaddingLeft, dimensions().width < 44 ? 1 : Infinity)
+  const paddingRight = () => Math.min(layout().containerPaddingRight, dimensions().width < 44 ? 1 : Infinity)
+  const contentWidth = createMemo(
+    () => (props.width ?? dimensions().width - props.verticalTabsWidth) - paddingLeft() - paddingRight(),
+  )
   const models = createMemo(() => data.location.model.list(location()) ?? [])
 
   const scrollAcceleration = createMemo(() => getScrollAcceleration(config))
@@ -1509,9 +1515,11 @@ export function Session(props: {
         <box
           flexGrow={1}
           minHeight={0}
-          paddingBottom={1}
-          paddingLeft={dimensions().width < 44 ? 1 : 2}
-          paddingRight={dimensions().width < 44 ? 1 : 2}
+          paddingTop={layout().containerPaddingTop}
+          paddingBottom={layout().containerPaddingBottom}
+          paddingLeft={paddingLeft()}
+          paddingRight={paddingRight()}
+          gap={layout().containerGap}
         >
           <Show when={session()}>
             <box flexGrow={1} minHeight={0} position="relative">
@@ -1669,13 +1677,19 @@ type SessionRowViewProps = {
 }
 
 function SessionRowView(props: SessionRowViewProps) {
+  const layout = useLayout()
+  const spacing = () => {
+    if (props.row.type === "assistant-footer") return layout().agentInfoMarginTop
+    if (props.row.type === "group" || props.row.type === "part") return layout().toolMarginTop
+    return layout().messageSeparation
+  }
   const [target, setTarget] = createSignal<BoxRenderable>()
   useEntryAnchor({
     entry: () => (props.row.type === "group" ? undefined : props.row),
     node: target,
   })
   return (
-    <box ref={setTarget} id={sessionRowID(props.row, props.boundaryID)} marginTop={1} flexShrink={0}>
+    <box ref={setTarget} id={sessionRowID(props.row, props.boundaryID)} marginTop={spacing()} flexShrink={0}>
       <Switch>
         <Match when={props.row.type === "group" ? props.row : undefined}>
           {(row) => (
@@ -2006,6 +2020,7 @@ function SessionPartView(props: {
 }
 
 function AssistantFooter(props: { message: SessionMessageAssistant }) {
+  const layout = useLayout()
   const ctx = use()
   const config = useConfig()
   const data = useData()
@@ -2042,7 +2057,10 @@ function AssistantFooter(props: { message: SessionMessageAssistant }) {
         </Show>
       </Show>
       <AssistantRetry retry={props.message.retry} />
-      <box paddingLeft={3} marginTop={props.message.retry || (props.message.error && !interrupted()) ? 1 : 0}>
+      <box
+        paddingLeft={layout().textIndent}
+        marginTop={props.message.retry || (props.message.error && !interrupted()) ? 1 : 0}
+      >
         <text>
           <span style={{ fg: props.message.error ? theme.text.muted : local.agent.color(props.message.agent) }}>
             {Locale.titlecase(props.message.agent)}
@@ -2348,6 +2366,7 @@ function ShellMessage(props: { message: Extract<SessionMessageInfo, { type: "she
 
 function UserMessage(props: { message: SessionMessageUser }) {
   const ctx = use()
+  const layout = useLayout()
   const newDesigns = useNewDesigns()
   const data = useData()
   const local = useLocal()
@@ -2416,9 +2435,9 @@ function UserMessage(props: { message: SessionMessageUser }) {
               />
             ))
           }}
-          paddingTop={1}
-          paddingBottom={1}
-          paddingLeft={2}
+          paddingTop={layout().userMessagePaddingTop}
+          paddingBottom={layout().userMessagePaddingBottom}
+          paddingLeft={layout().messagePaddingLeft}
           backgroundColor={hover() ? theme.decrease(theme.background.raised.base) : theme.background.raised.base}
           flexShrink={0}
         >
@@ -2891,6 +2910,7 @@ type BlockToolProps = {
 }
 
 function BlockTool(props: BlockToolProps) {
+  const layout = useLayout()
   const theme = useTheme()
   const background = () => theme.background.raised.base
   const ctx = use()
@@ -2906,7 +2926,7 @@ function BlockTool(props: BlockToolProps) {
       flexShrink={0}
       paddingTop={1}
       paddingBottom={1}
-      paddingLeft={2}
+      paddingLeft={Math.max(0, layout().toolIndent - 1)}
       gap={1}
       backgroundColor={hover() ? theme.decrease(background()) : background()}
       customBorderChars={SplitBorder.customBorderChars}
