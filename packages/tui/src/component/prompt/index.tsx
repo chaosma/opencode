@@ -16,7 +16,7 @@ import { useTheme, useThemes } from "../../context/theme"
 import { tint } from "../../theme/color"
 import { createAnimatable, tween } from "../../ui/animation"
 import { EmptyBorder, SplitBorder } from "../../ui/border"
-import { useTuiPaths, useTuiTerminalEnvironment } from "../../context/runtime"
+import { useTuiApp, useTuiPaths, useTuiTerminalEnvironment } from "../../context/runtime"
 import { useClipboard } from "../../context/clipboard"
 import { Spinner } from "../spinner"
 import { useClient } from "../../context/client"
@@ -207,6 +207,7 @@ export function Prompt(props: PromptProps) {
   const currentLocation = useLocation()
   const args = useArgs()
   const config = useConfig().data
+  const app = useTuiApp()
   const dialog = useDialog()
   const toast = useToast()
   const status = createMemo(() => data.session.status(props.sessionID ?? ""))
@@ -1852,7 +1853,14 @@ export function Prompt(props: PromptProps) {
               cursorColor={disabled() ? theme.background.raised.base : theme.text.base}
               syntaxStyle={syntax()}
             />
-            <box flexDirection="row" flexShrink={0} paddingTop={1} gap={1} justifyContent="space-between">
+            <box
+              visible={!props.sessionID || !(config.debug?.devtools ?? app.channel === "local")}
+              flexDirection="row"
+              flexShrink={0}
+              paddingTop={1}
+              gap={1}
+              justifyContent="space-between"
+            >
               <PromptMetadataRow
                 mode={store.mode}
                 agent={agentLabel()}
@@ -1896,7 +1904,13 @@ export function Prompt(props: PromptProps) {
             }
           />
         </box>
-        <box width="100%" flexDirection="row" justifyContent="space-between" gap={2}>
+        <box
+          visible={!props.sessionID || status() === "running" || !!move.progress() || move.pendingNew()}
+          width="100%"
+          flexDirection="row"
+          justifyContent="space-between"
+          gap={2}
+        >
           <Slot path="prompt.footer" input={footerInput()}>
             <Slot path="prompt.footer.status" input={footerInput()}>
               <box

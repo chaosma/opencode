@@ -9,6 +9,7 @@ import { useClient } from "../context/client"
 import { useConfig } from "../config"
 import { useData } from "../context/data"
 import { useLocation } from "../context/location"
+import { useLocal } from "../context/local"
 import { useRoute } from "../context/route"
 import { Keymap } from "../context/keymap"
 import { useTheme, useThemes } from "../context/theme"
@@ -17,6 +18,8 @@ import { useDialog } from "../ui/dialog"
 import { DialogExperiments } from "./dialog-experiments"
 import { usePlugin } from "../plugin/context"
 import { errorMessage } from "../util/error"
+import { Locale } from "../util/locale"
+import { turnDuration, turnTokensPerSecond } from "../routes/session/rows"
 
 const graphWidth = 23
 const sampleIntervalMilliseconds = 2_000
@@ -31,6 +34,7 @@ export function DevToolsBar() {
   const config = useConfig()
   const dialog = useDialog()
   const data = useData()
+  const local = useLocal()
   const location = useLocation()
   const route = useRoute()
   const plugins = usePlugin()
@@ -53,6 +57,35 @@ export function DevToolsBar() {
     () => DevTools.data().find((group) => group.id === "theme-performance")?.entries ?? [],
   )
   const groups = createMemo(() => DevTools.data().filter((group) => group.id !== "theme-performance"))
+  const summary = createMemo(() => {
+    if (route.data.type !== "session") return
+    const session = data.session.get(route.data.sessionID)
+    if (!session) return
+    const history = data.session.message.list(session.id)
+    const reverted = history.findIndex((message) => message.id === session.revert?.messageID)
+    const messages = reverted < 0 ? history : history.slice(0, reverted)
+    const message = messages.findLast((message) => message.type === "assistant")
+    const agent = message?.agent ?? session.agent
+    const model = message?.model ?? session.model
+    if (!agent || !model) return
+    const name = data.location.model
+      .list(session.location)
+      ?.find((item) => item.providerID === model.providerID && item.id === model.id)?.name
+    const duration = message ? turnDuration(message, messages) : 0
+    const speed = message && config.data.session.tps ? turnTokensPerSecond(message, messages) : undefined
+    return {
+      agent,
+      error: !!message?.error,
+      detail: [
+        name ?? `${model.providerID}/${model.id}`,
+        duration ? Locale.duration(duration) : undefined,
+        speed ? `${speed.toFixed(1)} tok/s` : undefined,
+        message?.error?.message === "Step interrupted" ? "interrupted" : undefined,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    }
+  })
   const [server] = createResource(connected, async () => {
     const info = await client.api.server.info()
     return {
@@ -435,8 +468,20 @@ export function DevToolsBar() {
       >
         <text fg={theme.text.muted}>Experiments</text>
       </BarItem>
-      <box flexGrow={1} minWidth={0}>
-        <TimeToFirstDraw visible={timing()} width="100%" fg={theme.text.muted} label="Time to first draw" />
+      <box flexGrow={1} minWidth={0} paddingRight={1}>
+        <Show
+          when={summary()}
+          fallback={<TimeToFirstDraw visible={timing()} width="100%" fg={theme.text.muted} label="Time to first draw" />}
+        >
+          {(summary) => (
+            <text width="100%" textAlign="right" wrapMode="none" truncate fg={theme.text.muted}>
+              <span style={{ fg: summary().error ? theme.text.muted : local.agent.color(summary().agent) }}>
+                {Locale.titlecase(summary().agent)}
+              </span>
+              {` · ${summary().detail}`}
+            </text>
+          )}
+        </Show>
       </box>
     </box>
   )
@@ -451,6 +496,7 @@ function BarItem(props: ParentProps<{ active: boolean; onClick: () => void }>) {
       position="relative"
       zIndex={props.active ? 2500 : undefined}
       height={1}
+      flexShrink={0}
       flexDirection="row"
       paddingLeft={1}
       paddingRight={1}

@@ -19,7 +19,7 @@ import { useRoute, useRouteData } from "../../context/route"
 import { createStore } from "solid-js/store"
 import { useData } from "../../context/data"
 import { SplitBorder } from "../../ui/border"
-import { useTuiTerminalEnvironment } from "../../context/runtime"
+import { useTuiApp, useTuiTerminalEnvironment } from "../../context/runtime"
 import { Spinner, SPINNER_FRAMES } from "../../component/spinner"
 import { PatchDiff } from "../../component/patch-diff"
 import { useTheme, useThemes } from "../../context/theme"
@@ -1511,7 +1511,6 @@ export function Session(props: {
         <box
           flexGrow={1}
           minHeight={0}
-          paddingBottom={1}
           paddingLeft={dimensions().width < 44 ? 1 : 2}
           paddingRight={dimensions().width < 44 ? 1 : 2}
         >
@@ -1671,13 +1670,30 @@ type SessionRowViewProps = {
 }
 
 function SessionRowView(props: SessionRowViewProps) {
+  const config = useConfig()
+  const app = useTuiApp()
+  const summaryOnly = () => {
+    if (props.row.type !== "assistant-footer") return false
+    const message = props.message(props.row.messageID)
+    return (
+      message?.type === "assistant" &&
+      (!message.error || message.error.message === "Step interrupted") &&
+      !message.retry
+    )
+  }
   const [target, setTarget] = createSignal<BoxRenderable>()
   useEntryAnchor({
     entry: () => (props.row.type === "group" ? undefined : props.row),
     node: target,
   })
   return (
-    <box ref={setTarget} id={sessionRowID(props.row, props.boundaryID)} marginTop={1} flexShrink={0}>
+    <box
+      ref={setTarget}
+      id={sessionRowID(props.row, props.boundaryID)}
+      visible={!summaryOnly() || !(config.data.debug?.devtools ?? app.channel === "local")}
+      marginTop={1}
+      flexShrink={0}
+    >
       <Switch>
         <Match when={props.row.type === "group" ? props.row : undefined}>
           {(row) => (
@@ -2010,6 +2026,7 @@ function SessionPartView(props: {
 function AssistantFooter(props: { message: SessionMessageAssistant }) {
   const ctx = use()
   const config = useConfig()
+  const app = useTuiApp()
   const data = useData()
   const local = useLocal()
   const theme = useTheme()
@@ -2047,7 +2064,11 @@ function AssistantFooter(props: { message: SessionMessageAssistant }) {
         </Switch>
       </Show>
       <AssistantRetry retry={props.message.retry} />
-      <box paddingLeft={3} marginTop={props.message.retry || (props.message.error && !interrupted()) ? 1 : 0}>
+      <box
+        visible={!(config.data.debug?.devtools ?? app.channel === "local")}
+        paddingLeft={3}
+        marginTop={props.message.retry || (props.message.error && !interrupted()) ? 1 : 0}
+      >
         <text>
           <span style={{ fg: props.message.error ? theme.text.muted : local.agent.color(props.message.agent) }}>
             {Locale.titlecase(props.message.agent)}
